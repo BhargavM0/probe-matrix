@@ -44,7 +44,7 @@ class ProbeMatrix:
         independent_rows = N - dependent_rows
 
         #Determining and validating the ranks per each group size
-        ranks = dict[int, int] = {}
+        ranks: dict[int, int] = {}
         for M in groups:
             if rank_mode == "M-1":
                 rank = M-1
@@ -68,7 +68,7 @@ class ProbeMatrix:
 
         #Creating empty weight matrix and metadata (keeping track of groups)
         W = np.zeros((N,D), dtype = float)
-        metadata = []
+        self.metadata = []
 
         row_idx = 0
         dim_idx = 0
@@ -76,7 +76,39 @@ class ProbeMatrix:
         # 1. Adding the independent rows
         for _ in range(independent_rows):
             W[row_idx, dim_idx] = 1.0
-            self.metadata.append
+            self.metadata.append({"type": "independent", "rows": [row_idx], "size": 1, "rank": 1})
             row_idx+=1
             dim_idx+=1
 
+        # 2. Adding the groups of rows
+        for M in sorted(groups.keys()):
+            count = int(groups[M])
+            rank = int(ranks[M])
+
+            for group in range(count):
+                curr_rows = list(range(row_idx, row_idx+M)) #rows used currently by this group
+
+                if nicely_laid_out:
+                    temp = np.zeros((rank, D), dtype=float)
+                    for x in range(rank):
+                        temp[x, dim_idx+x] = 1.0
+                else:
+                    #Skipping for now
+                    pass
+
+                #Random linear combination of the prevoius rows
+                for y in range(M):
+                    coeffs = self.rng.normal(size=rank)
+                    v = coeffs @ temp 
+                    W[row_idx] = v
+                    row_idx += 1
+
+                self.metadata.append({"type": "group", "rows": curr_rows, "size": M, "rank": rank})
+
+                if nicely_laid_out:
+                    dim_idx+= rank
+        
+        # 3. Adding noise to matrix (sigma)
+
+        self.W = W
+        return W
