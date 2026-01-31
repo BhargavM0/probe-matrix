@@ -1,6 +1,7 @@
 import numpy as np
 
 '''
+notes
 groups[M] = count
 M is how many features are in each group (M features over M-1 dimensions)
 count is how many groups of M there are
