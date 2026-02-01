@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 '''
 notes
@@ -10,6 +12,7 @@ count is how many groups of M there are
 '''
 
 class ProbeMatrix:
+
 
     def synthesize(
             self, 
@@ -113,3 +116,33 @@ class ProbeMatrix:
 
         self.W = W
         return W
+    
+
+def visualize(
+        matrix: np.ndarray,
+        cmap: str = "viridis",
+        title: str = "Density Heatmap",
+        show_colorbar: bool = True
+    ):
+        masked_matrix = np.ma.masked_where(matrix == 0, matrix)
+        plt.figure()
+        im = plt.imshow(masked_matrix, cmap=cmap, interpolation="nearest")
+        plt.title(title)
+        plt.xlabel("Columns")
+        plt.ylabel("Rows")
+
+        if show_colorbar:
+            plt.colorbar(im)
+
+        plt.tight_layout()
+        plt.show()
+
+
+
+matrix = np.array([
+    [0, 2, 0, 5],
+    [1, 3, 0, 0],
+    [0, 0, 4, 7]
+])
+
+visualize(matrix)
