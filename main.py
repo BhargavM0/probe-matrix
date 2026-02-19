@@ -160,33 +160,37 @@ class ProbeMatrix:
 
         def find(x):
             while parent[x] != x:
-                parent[x] = parent[parent[x]]
+                parent[x] = parent[parent[x]] 
                 x = parent[x]
             return x
 
-        for cols in map(lambda r: np.flatnonzero(r), sig):
+        def union(a, b):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[rb] = ra
+
+        for r in range(N):
+            cols = np.flatnonzero(sig[r])
             if cols.size:
-                r0 = find(cols[0])
+                base = cols[0]
                 for c in cols[1:]:
-                    rc = find(c)
-                    if rc != r0:
-                        parent[rc] = r0
+                    union(base, c)
 
         comps = {}
         for c in range(D):
-            r = find(c)
-            comps.setdefault(r, []).append(c)
+            comps.setdefault(find(c), []).append(c)
 
-        G = np.zeros((N, D), int)
+        G = np.zeros((N, D), dtype=int)
         for cols in comps.values():
-            cols = np.asarray(cols, int)
-            rows = np.flatnonzero(sig[:, cols].any(axis=1))
+            cols = np.asarray(cols, dtype=int)
+            rows = np.flatnonzero(np.any(sig[:, cols], axis=1))
             G[np.ix_(rows, cols)] = 1
 
+        # Grapphing the plot
         plt.imshow(G, cmap="Greys", vmin=0, vmax=1, interpolation="nearest", aspect="equal")
         ax = plt.gca()
-        ax.set_xticks(np.arange(-.5, D, 1), minor=True)
-        ax.set_yticks(np.arange(-.5, N, 1), minor=True)
+        ax.set_xticks(np.arange(-0.5, D, 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, N, 1), minor=True)
         ax.grid(which="minor", linewidth=1)
         ax.tick_params(which="minor", bottom=False, left=False)
         plt.show()
