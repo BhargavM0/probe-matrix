@@ -7,15 +7,12 @@ notes
 groups[M] = count
 M is how many features are in each group (M features over M-1 dimensions)
 count is how many groups of M there are
-
-
 '''
 
 class ProbeMatrix:
 
     def __init__(self, seed= None):
         self.rng = np.random.default_rng(seed)
-
 
     def synthesize(
             self, 
@@ -146,6 +143,8 @@ class ProbeMatrix:
 
         self.W = W
         return W
+
+
 
 probe = ProbeMatrix()
 
