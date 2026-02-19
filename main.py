@@ -13,6 +13,9 @@ count is how many groups of M there are
 
 class ProbeMatrix:
 
+    def __init__(self, seed= None):
+        self.rng = np.random.default_rng(seed)
+
 
     def synthesize(
             self, 
@@ -89,21 +92,45 @@ class ProbeMatrix:
             count = int(groups[M])
             rank = int(ranks[M])
 
-            for group in range(count):
+            for _ in range(count):
                 curr_rows = list(range(row_idx, row_idx+M)) #rows used currently by this group
-
+                basis_rows = []
+                
+                #The basis for the linear combination of the N vector
                 if nicely_laid_out:
-                    temp = np.zeros((rank, D), dtype=float)
-                    for x in range(rank):
-                        temp[x, dim_idx+x] = 1.0
+                    for i in range(rank):
+                        v = np.zeros(D, dtype=float)
+                        v[dim_idx + i] = 1.0
+                        W[row_idx] = v
+                        basis_rows.append(v.copy())
+                        row_idx += 1
                 else:
                     #Skipping for now
                     pass
 
+                max_coeff = D + 1
+
                 #Random linear combination of the prevoius rows
-                for y in range(M):
-                    coeffs = self.rng.normal(size=rank)
-                    v = coeffs @ temp 
+                for _ in range(M - rank):
+
+                    coeffs = self.rng.integers(
+                        low=-max_coeff,
+                        high=max_coeff + 1,
+                        size=rank
+                    )
+
+                    # prevent zero vector
+                    while np.all(coeffs == 0):
+                        coeffs = self.rng.integers(
+                            low=-max_coeff,
+                            high=max_coeff + 1,
+                            size=rank
+                        )
+
+                    v = np.zeros(D, dtype=float)
+                    for i in range(rank):
+                        v += coeffs[i] * basis_rows[i]
+
                     W[row_idx] = v
                     row_idx += 1
 
@@ -113,36 +140,31 @@ class ProbeMatrix:
                     dim_idx+= rank
         
         # 3. Adding noise to matrix (sigma)
+        if sigma > 0:
+            noise = self.rng.normal(loc=0.0, scale=sigma, size=W.shape)
+            W = W + noise
 
         self.W = W
         return W
-    
 
-def visualize(
-        matrix: np.ndarray,
-        cmap: str = "viridis",
-        title: str = "Density Heatmap",
-        show_colorbar: bool = True
-    ):
-        masked_matrix = np.ma.masked_where(matrix == 0, matrix)
-        plt.figure()
-        im = plt.imshow(masked_matrix, cmap=cmap, interpolation="nearest")
-        plt.title(title)
-        plt.xlabel("Columns")
-        plt.ylabel("Rows")
+probe = ProbeMatrix()
 
-        if show_colorbar:
-            plt.colorbar(im)
+#Example
+'''
+W = probe.synthesize(
+    N=40,
+    D=34,
+    groups={3: 4, 5: 2},   
+    sigma=0.0,
+    nicely_laid_out=True
+)
+'''
+probe.synthesize(
+    N=5,
+    D=4,
+    groups={3: 1},   
+    sigma=0.0,
+    nicely_laid_out=True
+)
 
-        plt.tight_layout()
-        plt.show()
-
-
-
-matrix = np.array([
-    [0, 2, 0, 5],
-    [1, 3, 0, 0],
-    [0, 0, 4, 7]
-])
-
-visualize(matrix)
+print(probe.W)
