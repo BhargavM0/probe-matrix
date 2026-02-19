@@ -186,7 +186,7 @@ class ProbeMatrix:
             rows = np.flatnonzero(np.any(sig[:, cols], axis=1))
             G[np.ix_(rows, cols)] = 1
 
-        # Grapphing the plot
+        # Graphing the plot
         plt.imshow(G, cmap="Greys", vmin=0, vmax=1, interpolation="nearest", aspect="equal")
         ax = plt.gca()
         ax.set_xlabel(f"Columns (Dimensions)")
