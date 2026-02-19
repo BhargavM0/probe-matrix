@@ -189,6 +189,9 @@ class ProbeMatrix:
         # Grapphing the plot
         plt.imshow(G, cmap="Greys", vmin=0, vmax=1, interpolation="nearest", aspect="equal")
         ax = plt.gca()
+        ax.set_xlabel(f"Columns (Dimensions)")
+        ax.set_ylabel(f"Rows")
+        ax.set_title(f"Visualization of Synthesized Matrix")
         ax.set_xticks(np.arange(-0.5, D, 1), minor=True)
         ax.set_yticks(np.arange(-0.5, N, 1), minor=True)
         ax.grid(which="minor", linewidth=1)
@@ -200,10 +203,19 @@ class ProbeMatrix:
 probe = ProbeMatrix()
 probe.synthesize(
     N=44,
-    D=34,
-    groups={3: 1, 5:2, 4:7},   
+    D=38,
+    groups={3: 1, 5:2, 4:3},   
     sigma=0.01,
     nicely_laid_out=True
 )
+'''
+probe.synthesize(
+    N=99,
+    D=83,
+    groups={3: 1, 5:2, 4:7, 8: 3, 6: 1, 11: 2},   
+    sigma=0.01,
+    nicely_laid_out=True
+)
+'''
 probe.print()
 probe.plot()
