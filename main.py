@@ -13,6 +13,13 @@ class ProbeMatrix:
 
     def __init__(self, seed= None):
         self.rng = np.random.default_rng(seed)
+        self.W = None
+
+    def print(self):
+        if self.W is not None:
+            print(self.W)
+        else:
+            print("W does not exist")
 
     def synthesize(
             self, 
@@ -117,7 +124,7 @@ class ProbeMatrix:
                     )
 
                     # prevent zero vector
-                    while np.all(coeffs == 0):
+                    while np.any(coeffs == 0):
                         coeffs = self.rng.integers(
                             low=-max_coeff,
                             high=max_coeff + 1,
@@ -143,27 +150,56 @@ class ProbeMatrix:
 
         self.W = W
         return W
+    
+    def plot(self, tol=1e-1):
+        W = self.W
+        N, D = W.shape
+        sig = np.abs(W) > tol
 
+        parent = np.arange(D)
 
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
 
+        for cols in map(lambda r: np.flatnonzero(r), sig):
+            if cols.size:
+                r0 = find(cols[0])
+                for c in cols[1:]:
+                    rc = find(c)
+                    if rc != r0:
+                        parent[rc] = r0
+
+        comps = {}
+        for c in range(D):
+            r = find(c)
+            comps.setdefault(r, []).append(c)
+
+        G = np.zeros((N, D), int)
+        for cols in comps.values():
+            cols = np.asarray(cols, int)
+            rows = np.flatnonzero(sig[:, cols].any(axis=1))
+            G[np.ix_(rows, cols)] = 1
+
+        plt.imshow(G, cmap="Greys", vmin=0, vmax=1, interpolation="nearest", aspect="equal")
+        ax = plt.gca()
+        ax.set_xticks(np.arange(-.5, D, 1), minor=True)
+        ax.set_yticks(np.arange(-.5, N, 1), minor=True)
+        ax.grid(which="minor", linewidth=1)
+        ax.tick_params(which="minor", bottom=False, left=False)
+        plt.show()
+        return G
+
+    
 probe = ProbeMatrix()
-
-#Example
-'''
-W = probe.synthesize(
-    N=40,
-    D=34,
-    groups={3: 4, 5: 2},   
-    sigma=0.0,
-    nicely_laid_out=True
-)
-'''
 probe.synthesize(
-    N=5,
-    D=4,
-    groups={3: 1},   
-    sigma=0.0,
+    N=44,
+    D=34,
+    groups={3: 1, 5:2, 4:7},   
+    sigma=0.01,
     nicely_laid_out=True
 )
-
-print(probe.W)
+probe.print()
+probe.plot()
