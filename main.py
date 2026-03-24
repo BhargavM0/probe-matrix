@@ -7,6 +7,14 @@ notes
 groups[M] = count
 M is how many features are in each group (M features over M-1 dimensions)
 count is how many groups of M there are
+
+
+PSUEDO CODE FOR ANALYZE FUNCTION
+
+-validate the matrix
+-build a graph with connecting rows
+-determine the rank of the group
+- 
 '''
 
 class ProbeMatrix:
@@ -151,6 +159,106 @@ class ProbeMatrix:
         self.W = W
         return W
     
+    
+    def analyze(self, tol=1e-1):
+        """
+        Analyze the matrix structure and print a clean summary.
+
+        Output example:
+            rows 0-18: independent
+            rows 19-21: dimension 2
+            rows 22-25: dimension 3
+        """
+
+        if self.W is None:
+            raise ValueError("W does not exist. Run synthesize() first.")
+
+        W = self.W
+        N, D = W.shape
+
+        sig = np.abs(W) > tol
+
+        parent = np.arange(D)
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a, b):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[rb] = ra
+
+        # Build column connectivity
+        for r in range(N):
+            cols = np.flatnonzero(sig[r])
+            if cols.size > 1:
+                base = cols[0]
+                for c in cols[1:]:
+                    union(base, c)
+
+        # Only consider columns that actually appear
+        used_cols = np.flatnonzero(np.any(sig, axis=0))
+
+        comps = {}
+        for c in used_cols:
+            root = find(c)
+            comps.setdefault(root, []).append(c)
+
+        blocks = []
+
+        for cols in comps.values():
+            cols = np.asarray(cols)
+
+            rows = np.flatnonzero(np.any(sig[:, cols], axis=1))
+
+            sub = W[np.ix_(rows, cols)]
+            rank = np.linalg.matrix_rank(sub)
+
+            blocks.append({
+                "start": rows.min(),
+                "end": rows.max(),
+                "size": len(rows),
+                "rank": rank
+            })
+
+        blocks.sort(key=lambda x: x["start"])
+
+        print("\n=== Matrix Structure ===\n")
+
+        independent_start = None
+        independent_end = None
+
+        for b in blocks:
+
+            if b["size"] == 1 and b["rank"] == 1:
+
+                if independent_start is None:
+                    independent_start = b["start"]
+
+                independent_end = b["end"]
+
+            else:
+
+                if independent_start is not None:
+                    if independent_start == independent_end:
+                        print(f"row {independent_start}: independent")
+                    else:
+                        print(f"rows {independent_start}-{independent_end}: independent")
+
+                    independent_start = None
+                    independent_end = None
+
+                print(f"rows {b['start']}-{b['end']}: dimension {b['rank']}")
+
+        if independent_start is not None:
+            if independent_start == independent_end:
+                print(f"row {independent_start}: independent")
+            else:
+                print(f"rows {independent_start}-{independent_end}: independent")
+    
     def plot(self, tol=1e-1):
         W = self.W
         N, D = W.shape
@@ -219,3 +327,7 @@ probe.synthesize(
 '''
 probe.print()
 probe.plot()
+probe.analyze()
+
+analysis = probe.analyze(tol=1e-1)
+print(analysis)
